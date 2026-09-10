@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>datamoc</title>
+		<meta name="description" content="datamoc game projects and a small Pong demo built with mwg." />
+		<style>
+			:root {
+				color-scheme: dark;
+				font:
+					16px/1.5 system-ui,
+					sans-serif;
+			}
+			body {
+				margin: 0;
+				min-height: 100vh;
+				background: #0c1018;
+				color: #e9eef8;
+			}
+			main {
+				width: min(1100px, calc(100% - 2rem));
+				margin: 0 auto;
+				padding: 4rem 0;
+			}
+			header {
+				display: flex;
+				align-items: end;
+				justify-content: space-between;
+				gap: 1rem;
+				margin-bottom: 2rem;
+			}
+			h1 {
+				margin: 0;
+				color: #9dd7ff;
+				font-size: clamp(2.5rem, 8vw, 5rem);
+				letter-spacing: -0.06em;
+			}
+			.lede {
+				max-width: 38rem;
+				margin: 0.5rem 0 0;
+				color: #aab8cc;
+				font-size: 1.15rem;
+			}
+			.links {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.75rem;
+				margin: 1.5rem 0 2rem;
+			}
+			a {
+				color: #9dd7ff;
+			}
+			.button {
+				display: inline-block;
+				padding: 0.7rem 1rem;
+				border: 1px solid #45617d;
+				border-radius: 0.5rem;
+				background: #162538;
+				text-decoration: none;
+			}
+			.button:hover,
+			.button:focus-visible {
+				background: #203851;
+				outline: 2px solid #9dd7ff;
+				outline-offset: 2px;
+			}
+			.panel {
+				padding: 1.25rem;
+				border: 1px solid #2b3a4d;
+				border-radius: 0.8rem;
+				background: #121a27;
+				box-shadow: 0 1rem 3rem #0005;
+			}
+			.panel h2 {
+				margin-top: 0;
+				color: #ffd88a;
+			}
+			.game-layout {
+				display: grid;
+				grid-template-columns: minmax(0, 1fr) 16rem;
+				gap: 1.25rem;
+				align-items: start;
+			}
+			canvas {
+				display: block;
+				width: 100%;
+				aspect-ratio: 2 / 1;
+				border: 1px solid #45617d;
+				border-radius: 0.4rem;
+				background: #080b11;
+				image-rendering: pixelated;
+			}
+			.score {
+				display: flex;
+				justify-content: center;
+				gap: 3rem;
+				margin: 0.5rem 0 0;
+				color: #9dd7ff;
+				font-size: 1.5rem;
+			}
+			.score strong {
+				color: #fff;
+			}
+			.help {
+				color: #aab8cc;
+				font-size: 0.95rem;
+			}
+			code {
+				color: #aee8c2;
+			}
+			@media (max-width: 700px) {
+				header,
+				.game-layout {
+					display: block;
+				}
+				.panel + .panel {
+					margin-top: 1rem;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<main>
+			<header>
+				<div>
+					<h1>datamoc</h1>
+					<p class="lede">Small, portable game experiments and the tools that make them possible.</p>
+				</div>
+			</header>
+			<nav class="links" aria-label="Projects">
+				<a class="button" href="https://datamoc.github.io/mwg/">mwg framework</a>
+				<a class="button" href="https://datamoc.github.io/mwg-pixel-dungeon/">mwg Pixel Dungeon</a>
+			</nav>
+			<section class="panel">
+				<h2>Play Pong</h2>
+				<div class="game-layout">
+					<div>
+						<canvas id="pong" width="800" height="400" aria-label="Pong game"></canvas>
+						<div class="score" aria-live="polite">
+							<span>Player <strong id="player-score">0</strong></span
+							><span>CPU <strong id="cpu-score">0</strong></span>
+						</div>
+					</div>
+					<div class="help">
+						<p><strong>Controls</strong></p>
+						<p>
+							Move with <kbd>Arrow Up</kbd> and <kbd>Arrow Down</kbd>, or <kbd>W</kbd> and <kbd>S</kbd>.
+						</p>
+						<p>Press <kbd>Space</kbd> to start or pause. First to 7 wins.</p>
+						<p>
+							This demo uses <code>mw_games.Generator</code> from the MWG global bundle for deterministic
+							serves.
+						</p>
+					</div>
+				</div>
+			</section>
+		</main>
+		<script src="https://unpkg.com/@datamoc/mw_games@0.7.1/dist/mw_games.global.js"></script>
+		<script>
+			(() => {
+				const canvas = document.querySelector('#pong');
+				const ctx = canvas.getContext('2d');
+				const rng = new window.mw_games.Generator(20260910);
+				const playerScore = document.querySelector('#player-score');
+				const cpuScore = document.querySelector('#cpu-score');
+				const paddle = { w: 14, h: 92, speed: 330 };
+				const player = { x: 28, y: 154 };
+				const cpu = { x: 758, y: 154 };
+				const ball = { x: 400, y: 200, r: 8, vx: 300, vy: 120 };
+				const keys = new Set();
+				let scores = { player: 0, cpu: 0 };
+				let running = false;
+				let last = performance.now();
+
+				function serve(direction) {
+					ball.x = canvas.width / 2;
+					ball.y = canvas.height / 2;
+					ball.vx = direction * 300;
+					ball.vy = (rng.int(2) ? 1 : -1) * (90 + rng.int(110));
+				}
+
+				function resetMatch() {
+					scores = { player: 0, cpu: 0 };
+					playerScore.textContent = '0';
+					cpuScore.textContent = '0';
+					serve(rng.int(2) ? 1 : -1);
+					running = false;
+				}
+
+				function point(winner) {
+					scores[winner] += 1;
+					playerScore.textContent = scores.player;
+					cpuScore.textContent = scores.cpu;
+					if (scores[winner] >= 7) resetMatch();
+					else serve(winner === 'player' ? -1 : 1);
+				}
+
+				function update(dt) {
+					const direction =
+						(keys.has('ArrowDown') || keys.has('s') ? 1 : 0) -
+						(keys.has('ArrowUp') || keys.has('w') ? 1 : 0);
+					player.y = Math.max(
+						0,
+						Math.min(canvas.height - paddle.h, player.y + direction * paddle.speed * dt),
+					);
+					const cpuTarget = ball.y - paddle.h / 2;
+					cpu.y += Math.sign(cpuTarget - cpu.y) * Math.min(Math.abs(cpuTarget - cpu.y), 250 * dt);
+					cpu.y = Math.max(0, Math.min(canvas.height - paddle.h, cpu.y));
+					ball.x += ball.vx * dt;
+					ball.y += ball.vy * dt;
+					if (ball.y < ball.r || ball.y > canvas.height - ball.r) {
+						ball.vy *= -1;
+						ball.y = Math.max(ball.r, Math.min(canvas.height - ball.r, ball.y));
+					}
+					for (const bat of [player, cpu]) {
+						const hit =
+							ball.x + ball.r > bat.x &&
+							ball.x - ball.r < bat.x + paddle.w &&
+							ball.y + ball.r > bat.y &&
+							ball.y - ball.r < bat.y + paddle.h;
+						if (hit && ((bat === player && ball.vx < 0) || (bat === cpu && ball.vx > 0))) {
+							ball.vx *= -1.06;
+							ball.vy += ((ball.y - (bat.y + paddle.h / 2)) / (paddle.h / 2)) * 90;
+						}
+					}
+					if (ball.x < -ball.r) point('cpu');
+					if (ball.x > canvas.width + ball.r) point('player');
+				}
+
+				function draw() {
+					ctx.fillStyle = '#080b11';
+					ctx.fillRect(0, 0, canvas.width, canvas.height);
+					ctx.setLineDash([8, 14]);
+					ctx.strokeStyle = '#26384d';
+					ctx.beginPath();
+					ctx.moveTo(400, 0);
+					ctx.lineTo(400, 400);
+					ctx.stroke();
+					ctx.setLineDash([]);
+					ctx.fillStyle = '#9dd7ff';
+					ctx.fillRect(player.x, player.y, paddle.w, paddle.h);
+					ctx.fillRect(cpu.x, cpu.y, paddle.w, paddle.h);
+					ctx.fillStyle = '#ffd88a';
+					ctx.beginPath();
+					ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+					ctx.fill();
+				}
+
+				function frame(now) {
+					const dt = Math.min((now - last) / 1000, 0.04);
+					last = now;
+					if (running) update(dt);
+					draw();
+					requestAnimationFrame(frame);
+				}
+				addEventListener('keydown', (event) => {
+					keys.add(event.key);
+					if (event.code === 'Space') {
+						event.preventDefault();
+						running = !running;
+					}
+				});
+				addEventListener('keyup', (event) => keys.delete(event.key));
+				resetMatch();
+				requestAnimationFrame(frame);
+			})();
+		</script>
+	</body>
+</html>
