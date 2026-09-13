@@ -1,0 +1,13 @@
+{
+  "name": "datamoc.github.io",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The datamoc GitHub Pages home page and its local MWG Pong demo.",
+  "type": "module",
+  "scripts": {
+    "check": "node tools/check.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

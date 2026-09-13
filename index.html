@@ -3,8 +3,8 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>datamoc</title>
-		<meta name="description" content="datamoc game projects and a small Pong demo built with mwg." />
+		<title>Michel Weinachter</title>
+		<meta name="description" content="Michel Weinachter game projects and a small Pong demo built with mwg." />
 		<style>
 			:root {
 				color-scheme: dark;
@@ -156,12 +156,12 @@
 				</div>
 			</section>
 		</main>
-		<script src="https://unpkg.com/@datamoc/mw_games@0.7.1/dist/mw_games.global.js"></script>
+		<script src="vendor/mw_games.global.js"></script>
 		<script>
 			(() => {
 				const canvas = document.querySelector('#pong');
-				const ctx = canvas.getContext('2d');
-				const rng = new window.mw_games.Generator(20260910);
+				const { Game, Generator, Scene2D, Shape2D } = mw_games;
+				const rng = new Generator(20260910);
 				const playerScore = document.querySelector('#player-score');
 				const cpuScore = document.querySelector('#cpu-score');
 				const paddle = { w: 14, h: 92, speed: 330 };
@@ -196,7 +196,36 @@
 					else serve(winner === 'player' ? -1 : 1);
 				}
 
-				function update(dt) {
+				class PongScene extends Scene2D {
+					create() {
+						this.background = new Shape2D().rect(0, 0, 800, 400).fill(0x080b11);
+						this.net = new Shape2D().moveTo(400, 0).lineTo(400, 400).stroke({
+							color: 0x26384d,
+							width: 2,
+						});
+						this.player = new Shape2D().rect(0, 0, paddle.w, paddle.h).fill(0x9dd7ff);
+						this.cpu = new Shape2D().rect(0, 0, paddle.w, paddle.h).fill(0x9dd7ff);
+						this.ball = new Shape2D().circle(0, 0, ball.r).fill(0xffd88a);
+						this.stage.addChild(this.background, this.net, this.player, this.cpu, this.ball);
+						this.resize(800, 400);
+					}
+
+					resize(width, height) {
+						const scale = Math.min(width / 800, height / 400);
+						this.stage.scale.set(scale);
+						this.stage.x = (width - 800 * scale) / 2;
+						this.stage.y = (height - 400 * scale) / 2;
+					}
+
+					update(dt) {
+						if (running) updatePhysics(dt);
+						this.player.position.set(player.x, player.y);
+						this.cpu.position.set(cpu.x, cpu.y);
+						this.ball.position.set(ball.x, ball.y);
+					}
+				}
+
+				function updatePhysics(dt) {
 					const direction =
 						(keys.has('ArrowDown') || keys.has('s') ? 1 : 0) -
 						(keys.has('ArrowUp') || keys.has('w') ? 1 : 0);
@@ -228,32 +257,6 @@
 					if (ball.x > canvas.width + ball.r) point('player');
 				}
 
-				function draw() {
-					ctx.fillStyle = '#080b11';
-					ctx.fillRect(0, 0, canvas.width, canvas.height);
-					ctx.setLineDash([8, 14]);
-					ctx.strokeStyle = '#26384d';
-					ctx.beginPath();
-					ctx.moveTo(400, 0);
-					ctx.lineTo(400, 400);
-					ctx.stroke();
-					ctx.setLineDash([]);
-					ctx.fillStyle = '#9dd7ff';
-					ctx.fillRect(player.x, player.y, paddle.w, paddle.h);
-					ctx.fillRect(cpu.x, cpu.y, paddle.w, paddle.h);
-					ctx.fillStyle = '#ffd88a';
-					ctx.beginPath();
-					ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
-					ctx.fill();
-				}
-
-				function frame(now) {
-					const dt = Math.min((now - last) / 1000, 0.04);
-					last = now;
-					if (running) update(dt);
-					draw();
-					requestAnimationFrame(frame);
-				}
 				addEventListener('keydown', (event) => {
 					keys.add(event.key);
 					if (event.code === 'Space') {
@@ -263,7 +266,15 @@
 				});
 				addEventListener('keyup', (event) => keys.delete(event.key));
 				resetMatch();
-				requestAnimationFrame(frame);
+				const game = new Game({
+					canvas,
+					background: 0x080b11,
+					pixelArt: true,
+					resizeTo: canvas.parentElement,
+				});
+				game.start(PongScene).catch((error) => {
+					console.error('MWG could not start Pong:', error);
+				});
 			})();
 		</script>
 	</body>
