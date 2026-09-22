@@ -168,14 +168,15 @@
 				const player = { x: 28, y: 154 };
 				const cpu = { x: 758, y: 154 };
 				const ball = { x: 400, y: 200, r: 8, vx: 300, vy: 120 };
+				const field = { width: 800, height: 400 };
 				const keys = new Set();
 				let scores = { player: 0, cpu: 0 };
 				let running = false;
 				let last = performance.now();
 
 				function serve(direction) {
-					ball.x = canvas.width / 2;
-					ball.y = canvas.height / 2;
+					ball.x = field.width / 2;
+					ball.y = field.height / 2;
 					ball.vx = direction * 300;
 					ball.vy = (rng.int(2) ? 1 : -1) * (90 + rng.int(110));
 				}
@@ -198,8 +199,8 @@
 
 				class PongScene extends Scene2D {
 					create() {
-						this.background = new Shape2D().rect(0, 0, 800, 400).fill(0x080b11);
-						this.net = new Shape2D().moveTo(400, 0).lineTo(400, 400).stroke({
+						this.background = new Shape2D().rect(0, 0, field.width, field.height).fill(0x080b11);
+						this.net = new Shape2D().moveTo(field.width / 2, 0).lineTo(field.width / 2, field.height).stroke({
 							color: 0x26384d,
 							width: 2,
 						});
@@ -207,14 +208,28 @@
 						this.cpu = new Shape2D().rect(0, 0, paddle.w, paddle.h).fill(0x9dd7ff);
 						this.ball = new Shape2D().circle(0, 0, ball.r).fill(0xffd88a);
 						this.stage.addChild(this.background, this.net, this.player, this.cpu, this.ball);
-						this.resize(800, 400);
+						this.resize(canvas.width, canvas.height);
 					}
 
 					resize(width, height) {
-						const scale = Math.min(width / 800, height / 400);
-						this.stage.scale.set(scale);
-						this.stage.x = (width - 800 * scale) / 2;
-						this.stage.y = (height - 400 * scale) / 2;
+						field.width = width;
+						field.height = height;
+						paddle.w = Math.max(8, width * 0.0175);
+						paddle.h = Math.min(92, height * 0.23);
+						paddle.speed = height * 0.825;
+						player.x = width * 0.035;
+						cpu.x = width - player.x - paddle.w;
+						player.y = Math.max(0, Math.min(height - paddle.h, player.y));
+						cpu.y = Math.max(0, Math.min(height - paddle.h, cpu.y));
+						this.background.clear().rect(0, 0, width, height).fill(0x080b11);
+						this.net.clear().moveTo(width / 2, 0).lineTo(width / 2, height).stroke({
+							color: 0x26384d,
+							width: 2,
+						});
+						this.player.clear().rect(0, 0, paddle.w, paddle.h).fill(0x9dd7ff);
+						this.cpu.clear().rect(0, 0, paddle.w, paddle.h).fill(0x9dd7ff);
+						this.ball.clear().circle(0, 0, Math.min(8, height * 0.02)).fill(0xffd88a);
+						ball.r = Math.min(8, height * 0.02);
 					}
 
 					update(dt) {
@@ -231,16 +246,16 @@
 						(keys.has('ArrowUp') || keys.has('w') ? 1 : 0);
 					player.y = Math.max(
 						0,
-						Math.min(canvas.height - paddle.h, player.y + direction * paddle.speed * dt),
+							Math.min(field.height - paddle.h, player.y + direction * paddle.speed * dt),
 					);
 					const cpuTarget = ball.y - paddle.h / 2;
 					cpu.y += Math.sign(cpuTarget - cpu.y) * Math.min(Math.abs(cpuTarget - cpu.y), 250 * dt);
-					cpu.y = Math.max(0, Math.min(canvas.height - paddle.h, cpu.y));
+					cpu.y = Math.max(0, Math.min(field.height - paddle.h, cpu.y));
 					ball.x += ball.vx * dt;
 					ball.y += ball.vy * dt;
-					if (ball.y < ball.r || ball.y > canvas.height - ball.r) {
+					if (ball.y < ball.r || ball.y > field.height - ball.r) {
 						ball.vy *= -1;
-						ball.y = Math.max(ball.r, Math.min(canvas.height - ball.r, ball.y));
+						ball.y = Math.max(ball.r, Math.min(field.height - ball.r, ball.y));
 					}
 					for (const bat of [player, cpu]) {
 						const hit =
@@ -254,7 +269,7 @@
 						}
 					}
 					if (ball.x < -ball.r) point('cpu');
-					if (ball.x > canvas.width + ball.r) point('player');
+					if (ball.x > field.width + ball.r) point('player');
 				}
 
 				addEventListener('keydown', (event) => {
