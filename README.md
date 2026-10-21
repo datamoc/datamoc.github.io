@@ -23,9 +23,10 @@ opponent strategies through the vendored Pyroeis browser bundle in a Web Worker.
   deployment, at
   [datamoc.github.io/mwg-pixel-dungeon](https://datamoc.github.io/mwg-pixel-dungeon/).
 
-The Pong demo imports `playTone` from `@datamoc/mwg-retro-audio/sfx` online from npmjs via esm.sh.
-Audio starts after the first keyboard interaction, when the browser allows Web Audio playback.
-This is the page's only CDN dependency; the audio package is not bundled in the repository.
+The Pong demo uses `playTone` from `@datamoc/mwg-retro-audio@0.3.0`. Its small tone module is
+included locally at `vendor/mwg-retro-audio-tone.js`, with its MPL-2.0 licence alongside it.
+There is no online package load for audio. Playback starts after the first keyboard interaction,
+when the browser allows Web Audio.
 
 The CPU paddle strategy can be edited in the page as Lua. Define `target_y(state)` to receive the
 ball, paddle and field values and return the desired top position of the CPU paddle. The default
@@ -46,8 +47,8 @@ page and the local MWG bundle without installing runtime dependencies or buildin
 
 ## Working on this locally
 
-Serve the repository over HTTP(S) to preview it locally. The Lua editor uses a Web Worker, and
-retro audio loads from esm.sh, so opening `index.html` from `file://` is not supported.
+Serve the repository over HTTP(S) to preview it locally. The Lua editor uses a Web Worker, so
+opening `index.html` from `file://` is not supported. Retro audio is loaded from a local file.
 
 The vendored runtime is `@datamoc/mwg@0.48.1`, whose global bundle exposes `window.mwg`.
 Update `vendor/mwg.global.js` from the published package when upgrading MWG. Its MPL-2.0 licence

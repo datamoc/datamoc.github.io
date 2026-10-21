@@ -173,7 +173,7 @@
 							<ul>
 								<li><code>mwg.Generator</code> provides deterministic serves. MWG is included locally in <code>vendor/mwg.global.js</code>.</li>
 								<li>Pyroeis runs the editable Lua opponent strategy in a Web Worker. Its bundle is included locally in <code>vendor/pyroeis.bundle.js</code>.</li>
-								<li><a href="https://www.npmjs.com/package/@datamoc/mwg-retro-audio">mwg-retro-audio</a> provides <code>playTone</code>. The page loads it online from npmjs via esm.sh; it is not included locally.</li>
+								<li><a href="https://www.npmjs.com/package/@datamoc/mwg-retro-audio">mwg-retro-audio</a> provides <code>playTone</code>. Its tone module is included locally at <code>vendor/mwg-retro-audio-tone.js</code>, so playback needs no online package load.</li>
 							</ul>
 						</details>
 						<div class="ai-editor">
@@ -201,12 +201,9 @@ end</textarea>
 				</div>
 			</section>
 		</main>
-		<script type="importmap">
-			{"imports":{"@datamoc/mwg-retro-audio/sfx":"https://esm.sh/@datamoc/mwg-retro-audio@0.3.0/sfx"}}
-		</script>
 		<script src="vendor/mwg.global.js"></script>
 		<script type="module">
-			import { playTone } from '@datamoc/mwg-retro-audio/sfx';
+			import { playTone } from './vendor/mwg-retro-audio-tone.js';
 
 			(() => {
 				const canvas = document.querySelector('#pong');
